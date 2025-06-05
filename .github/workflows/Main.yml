@@ -1,40 +1,40 @@
 name: Android Build
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # More stable than ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-    - name: Set up JDK 8
-      uses: actions/setup-java@v1
-      with:
-        java-version: 1.8
-
-    - name: Install Haxe
+    - name: Install dependencies
       run: |
-        sudo add-apt-repository ppa:haxe/releases -y
         sudo apt-get update
-        sudo apt-get install haxe -y
-        haxelib setup ~/haxelib
-        haxelib install hxcpp
-        haxelib install openfl
+        sudo apt-get install -y software-properties-common zip unzip wget tar openjdk-8-jdk python3 python3-pip
+
+    - name: Install Haxe and Haxelib
+      run: |
+        wget https://github.com/HaxeFoundation/haxe/releases/download/4.2.5/haxe-4.2.5-linux64.tar.gz
+        tar -xzf haxe-4.2.5-linux64.tar.gz
+        sudo mv haxe-4.2.5-linux64/* /usr/local/bin
+        mkdir ~/haxelib && haxelib setup ~/haxelib
         haxelib install lime
-        haxelib run openfl setup
+        haxelib install openfl
+        haxelib install hxcpp
         haxelib git extension-androidtools https://github.com/jigsaw-4277821/extension-androidtools.git
         haxelib git extension-videoview https://github.com/jigsaw-4277821/extension-videoview.git
         haxelib remove linc_luajit
         haxelib git linc_luajit https://github.com/jigsaw-4277821/linc_luajit.git
 
-    - name: Set up Android SDK and NDK
+    - name: Install Android SDK and NDK r15c
       run: |
+        mkdir -p $HOME/android-sdk
         wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
         unzip sdk-tools-linux-4333796.zip -d $HOME/android-sdk
         yes | $HOME/android-sdk/tools/bin/sdkmanager --licenses
@@ -42,17 +42,18 @@ jobs:
 
     - name: Set environment variables
       run: |
-        echo "export ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-        echo "export ANDROID_NDK_ROOT=$HOME/android-sdk/ndk/15.2.4203891" >> $GITHUB_ENV
-        echo "export PATH=$ANDROID_SDK_ROOT/tools:$ANDROID_SDK_ROOT/platform-tools:$PATH" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT=$HOME/android-sdk/ndk/15.2.4203891" >> $GITHUB_ENV
+        echo "$HOME/android-sdk/tools:$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+
+    - name: Lime Setup
+      run: haxelib run lime setup android --quiet
 
     - name: Build APK
-      run: |
-        haxelib run lime setup android
-        haxelib run lime build android -final
+      run: haxelib run lime build android -final
 
     - name: Upload APK
       uses: actions/upload-artifact@v2
       with:
-        name: FNF-Psych-Engine-APK
-        path: export/release/android/bin/app/build/outputs/apk/debug/app-debug.apk
+        name: fnf-psych-engine.apk
+        path: export/release/android/bin/app/build/outputs/apk/debug/*.apk
