@@ -1,72 +1,58 @@
-name: Build FNF Psych Engine Android APK
+name: Android Build
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    - uses: actions/checkout@v2
 
-      - name: Set up Java 8
-        uses: actions/setup-java@v3
-        with:
-          java-version: '8'
-          distribution: 'temurin'
+    - name: Set up JDK 8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y curl wget zip unzip openjdk-8-jdk git
+    - name: Install Haxe
+      run: |
+        sudo add-apt-repository ppa:haxe/releases -y
+        sudo apt-get update
+        sudo apt-get install haxe -y
+        haxelib setup ~/haxelib
+        haxelib install hxcpp
+        haxelib install openfl
+        haxelib install lime
+        haxelib run openfl setup
+        haxelib git extension-androidtools https://github.com/jigsaw-4277821/extension-androidtools.git
+        haxelib git extension-videoview https://github.com/jigsaw-4277821/extension-videoview.git
+        haxelib remove linc_luajit
+        haxelib git linc_luajit https://github.com/jigsaw-4277821/linc_luajit.git
 
-      - name: Install Haxe
-        run: |
-          sudo add-apt-repository ppa:haxe/releases -y
-          sudo apt-get update
-          sudo apt-get install -y haxe
+    - name: Set up Android SDK and NDK
+      run: |
+        wget https://dl.google.com/android/repository/sdk-tools-linux-4333796.zip
+        unzip sdk-tools-linux-4333796.zip -d $HOME/android-sdk
+        yes | $HOME/android-sdk/tools/bin/sdkmanager --licenses
+        $HOME/android-sdk/tools/bin/sdkmanager "platforms;android-29" "build-tools;29.0.3" "ndk;15.2.4203891"
 
-      - name: Install haxelibs
-        run: |
-          haxelib install lime
-          haxelib install openfl
-          haxelib git extension-androidtools https://github.com/jigsaw-4277821/extension-androidtools.git
-          haxelib git extension-videoview https://github.com/jigsaw-4277821/extension-videoview.git
-          haxelib remove linc_luajit
-          haxelib git linc_luajit https://github.com/jigsaw-4277821/linc_luajit.git
+    - name: Set environment variables
+      run: |
+        echo "export ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+        echo "export ANDROID_NDK_ROOT=$HOME/android-sdk/ndk/15.2.4203891" >> $GITHUB_ENV
+        echo "export PATH=$ANDROID_SDK_ROOT/tools:$ANDROID_SDK_ROOT/platform-tools:$PATH" >> $GITHUB_ENV
 
-      - name: Download and set up Android SDK/NDK
-        run: |
-          mkdir -p $HOME/android-sdk
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-          unzip cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
-          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
-          export ANDROID_SDK_ROOT=$HOME/android-sdk
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-28" "build-tools;28.0.3"
-          wget https://dl.google.com/android/repository/android-ndk-r15c-linux-x86_64.zip -O ndk-r15c.zip
-          unzip ndk-r15c.zip -d $HOME/android-sdk/
+    - name: Build APK
+      run: |
+        haxelib run lime setup android
+        haxelib run lime build android -final
 
-      - name: Set environment variables
-        run: |
-          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$HOME/android-sdk/android-ndk-r15c" >> $GITHUB_ENV
-          echo "JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))" >> $GITHUB_ENV
-          echo "PATH=$JAVA_HOME/bin:$PATH" >> $GITHUB_ENV
-
-      - name: Setup Lime for Android
-        run: lime setup android -y
-
-      - name: Build APK
-        run: lime build android -final
-
-      - name: Upload APK to Discord
-        if: success()
-        run: |
-          curl -F "payload_json={\"content\": \"✅ Build complete! Here's the APK.\"}" \
-               -F "file=@export/release/android/bin/app/build/outputs/apk/debug/app-debug.apk" \
-               https://discord.com/api/webhooks/1325352792084451339/7gwGFqQVQddjLnXZb3zhEmTrrN8C6SlraSZEzbysSa7DdeMFJd-wcMdjB_Wk5lnz_ig7
+    - name: Upload APK
+      uses: actions/upload-artifact@v2
+      with:
+        name: FNF-Psych-Engine-APK
+        path: export/release/android/bin/app/build/outputs/apk/debug/app-debug.apk
