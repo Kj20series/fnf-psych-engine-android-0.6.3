@@ -74,7 +74,7 @@ jobs:
     - name: Upload APK to Discord
       if: success()
       env:
-        DISCORD_WEBHOOK_URL: ${{ https://discord.com/api/webhooks/1325352792084451339/7gwGFqQVQddjLnXZb3zhEmTrrN8C6SlraSZEzbysSa7DdeMFJd-wcMdjB_Wk5lnz_ig7 }}
+        DISCORD_WEBHOOK_URL: ${{https://discord.com/api/webhooks/1325352792084451339/7gwGFqQVQddjLnXZb3zhEmTrrN8C6SlraSZEzbysSa7DdeMFJd-wcMdjB_Wk5lnz_ig7}}
       run: |
         curl -F "payload_json={\"content\": \"✅ Build succeeded! Here is the latest APK.\"}" \
              -F "file=@export/release/android/bin/app/build/outputs/apk/debug/app-debug.apk" \
