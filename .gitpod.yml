@@ -14,8 +14,8 @@ tasks:
       echo "📦 Installing Haxe to /opt/haxe..."
       EXTRACTED_FOLDER=$(find . -maxdepth 1 -type d -name "haxe*" | head -n 1)
       sudo mv "$EXTRACTED_FOLDER" /opt/haxe
-      sudo ln -s /opt/haxe/haxe /usr/bin/haxe
-      sudo ln -s /opt/haxe/haxelib /usr/bin/haxelib
+      sudo ln -sf /opt/haxe/haxe /usr/bin/haxe
+      sudo ln -sf /opt/haxe/haxelib /usr/bin/haxelib
 
       echo "📚 Fixing haxelib config issue..."
       if [ -f ~/.haxelib ]; then
@@ -32,7 +32,7 @@ tasks:
       echo "🧼 Cleaning up installer..."
       rm haxe-4.2.5-linux64.tar.gz
 
-      echo "✅ Done! Use this to build:"
+      echo "✅ Setup complete! Build your APK with:"
       echo "cd fnf-psych-engine-android-0.6.3 && lime build android -final"
 
 vscode:
