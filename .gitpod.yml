@@ -1,0 +1,38 @@
+image: gitpod/workspace-full
+
+tasks:
+  - name: Setup Environment
+    init: |
+      echo "🛠️ Updating and installing base packages..."
+      sudo apt update
+      sudo apt install -y openjdk-17-jdk unzip wget curl git libncurses5
+
+      echo "⬇️ Downloading Haxe..."
+      wget https://github.com/HaxeFoundation/haxe/releases/download/4.2.5/haxe-4.2.5-linux64.tar.gz
+      tar xzf haxe-4.2.5-linux64.tar.gz
+
+      echo "📦 Installing Haxe to /opt/haxe..."
+      EXTRACTED_FOLDER=$(find . -maxdepth 1 -type d -name "haxe*" | head -n 1)
+      sudo mv "$EXTRACTED_FOLDER" /opt/haxe
+      sudo ln -s /opt/haxe/haxe /usr/bin/haxe
+      sudo ln -s /opt/haxe/haxelib /usr/bin/haxelib
+
+      echo "📚 Fixing haxelib config issue..."
+      if [ -f ~/.haxelib ]; then
+        rm ~/.haxelib
+      fi
+      mkdir -p ~/.haxelib
+      echo "~/.haxelib" > ~/.haxelib/config
+
+      echo "📦 Installing Haxe libraries..."
+      haxelib install lime
+      haxelib install openfl
+      haxelib run lime setup android --skip-ndk
+
+      echo "✅ Done! Run this to build:"
+      echo "cd fnf-psych-engine-android-0.6.3 && lime build android -final"
+
+vscode:
+  extensions:
+    - haxe-haxe
+    - lime.lime-vscode
