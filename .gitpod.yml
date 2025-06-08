@@ -29,7 +29,10 @@ tasks:
       haxelib install openfl
       haxelib run lime setup android --skip-ndk
 
-      echo "✅ Done! Run this to build:"
+      echo "🧼 Cleaning up installer..."
+      rm haxe-4.2.5-linux64.tar.gz
+
+      echo "✅ Done! Use this to build:"
       echo "cd fnf-psych-engine-android-0.6.3 && lime build android -final"
 
 vscode:
